@@ -140,7 +140,7 @@ func TestConfigRequestToken_CallbackNotConfirmed(t *testing.T) {
 	}
 	requestToken, requestSecret, err := config.RequestToken()
 	if assert.Error(t, err) {
-		assert.Equal(t, "oauth1: oauth_callback_confirmed was not true", err.Error())
+		assert.Contains(t, err.Error(), "oauth1: oauth_callback_confirmed was not true")
 	}
 	assert.Equal(t, "", requestToken)
 	assert.Equal(t, "", requestSecret)
@@ -177,7 +177,7 @@ func TestConfigRequestToken_MissingTokenOrSecret(t *testing.T) {
 	}
 	requestToken, requestSecret, err := config.RequestToken()
 	if assert.Error(t, err) {
-		assert.Equal(t, "oauth1: Response missing oauth_token or oauth_token_secret", err.Error())
+		assert.Contains(t, err.Error(), "oauth1: Response missing oauth_token or oauth_token_secret")
 	}
 	assert.Equal(t, "", requestToken)
 	assert.Equal(t, "", requestSecret)

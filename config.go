@@ -67,39 +67,39 @@ func NewClient(ctx context.Context, config *Config, token *Token) *http.Client {
 func (c *Config) RequestToken() (requestToken, requestSecret string, err error) {
 	req, err := http.NewRequest("POST", c.Endpoint.RequestTokenURL, nil)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("oauth1: create new request: POST %q: %v", c.Endpoint.RequestTokenURL, err)
 	}
 	err = newAuther(c).setRequestTokenAuthHeader(req)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("oauth1: set request token auth header: %v", err)
 	}
 	resp, err := c.httpClient().Do(req)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("oauth1: perform request POST %q: %v", c.Endpoint.RequestTokenURL, err)
 	}
 	// when err is nil, resp contains a non-nil resp.Body which must be closed
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", "", fmt.Errorf("oauth1: error reading Body: %v", err)
+		return "", "", fmt.Errorf("oauth1: error reading response body: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return "", "", fmt.Errorf("oauth1: invalid status %d: %s", resp.StatusCode, body)
+		return "", "", fmt.Errorf("oauth1: unexpected status code %d on POST %q: %s", resp.StatusCode, c.Endpoint.RequestTokenURL, body)
 	}
 
 	// ParseQuery to decode URL-encoded application/x-www-form-urlencoded body
 	values, err := url.ParseQuery(string(body))
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("oauth1: failed to decode body %q on POST %q: %v", string(body), c.Endpoint.RequestTokenURL, err)
 	}
 	requestToken = values.Get(oauthTokenParam)
 	requestSecret = values.Get(oauthTokenSecretParam)
 	if requestToken == "" || requestSecret == "" {
-		return "", "", errors.New("oauth1: Response missing oauth_token or oauth_token_secret")
+		return "", "", fmt.Errorf("oauth1: Response missing oauth_token or oauth_token_secret on POST %q: %v", c.Endpoint.RequestTokenURL, string(body))
 	}
 	if values.Get(oauthCallbackConfirmedParam) != "true" {
-		return "", "", errors.New("oauth1: oauth_callback_confirmed was not true")
+		return "", "", fmt.Errorf("oauth1: oauth_callback_confirmed was not true on POST %q: %v", c.Endpoint.RequestTokenURL, string(body))
 	}
 	return requestToken, requestSecret, nil
 }
